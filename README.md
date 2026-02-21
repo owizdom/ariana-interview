@@ -5,5 +5,5 @@ Scans the top 100 GitHub repositories and prints detected functions in the termi
 ```bash
 cd "/Users/Apple/Desktop/my future"
 python3 runner.py --parallel-terminals 
-python3 runner.py --parallel-terminals 
+python3 runner.py --parallel-terminals --show-body
 ```
