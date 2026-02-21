@@ -56,6 +56,14 @@ def _parse_batch_targets(raw: str | None, final_top: int) -> list[int]:
     return targets
 
 
+def _chunked_targets(final_top: int, chunk_size: int) -> list[int]:
+    step = max(1, chunk_size)
+    targets = list(range(step, final_top + 1, step))
+    if not targets or targets[-1] != final_top:
+        targets.append(final_top)
+    return targets
+
+
 def _print_functions(repo: str, functions: list[dict], show_body: bool) -> None:
     for fn in functions:
         start = int(fn["start_line"])
@@ -175,7 +183,7 @@ def main() -> None:
     parser.add_argument(
         "--max-file-kb",
         type=int,
-        default=512,
+        default=128,
         help="Skip files larger than this",
     )
     parser.add_argument(
@@ -185,24 +193,30 @@ def main() -> None:
     )
     parser.add_argument(
         "--batch-targets",
-        default="10,20,25,30",
-        help="Cumulative batch checkpoints, comma-separated. Default is `10,20,25,30`.",
+        default=None,
+        help="Cumulative batch checkpoints, comma-separated. Example: `10,20,25,30`.",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=25,
+        help="Process repositories in fixed-size batches (e.g. 25 => 1-25, 26-50, ...).",
     )
     parser.add_argument(
         "--show-body",
         action="store_true",
-        default=True,
-        help="Print function bodies in terminal output (enabled by default)",
+        default=False,
+        help="Print function bodies in terminal output",
     )
     parser.add_argument(
         "--no-body",
         action="store_true",
-        help="Disable function body output in terminal",
+        help="Disable function body output in terminal (default)",
     )
     parser.add_argument(
         "--workers",
         type=int,
-        default=4,
+        default=12,
         help="Parallel workers for repo download/scan",
     )
     args = parser.parse_args()
@@ -223,7 +237,10 @@ def main() -> None:
             f"Returning {len(repos)} out of requested {requested_top}."
         )
 
-    batch_targets = _parse_batch_targets(args.batch_targets, requested_top)
+    if args.batch_targets:
+        batch_targets = _parse_batch_targets(args.batch_targets, requested_top)
+    else:
+        batch_targets = _chunked_targets(requested_top, args.chunk_size)
     stats = defaultdict(int)
     prev = 0
 
@@ -233,6 +250,7 @@ def main() -> None:
         if target <= prev:
             continue
 
+        print(f"[batch {batch_no}/{len(batch_targets)}] repos {prev + 1}-{target}")
         batch_processed, batch_functions = _process_repositories(
             repos,
             prev,

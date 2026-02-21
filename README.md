@@ -1,16 +1,12 @@
 # GitHub Function Scanner
 
-This script scans the top 100 GitHub repositories and prints all detected functions with:
-- repository
-- file path
-- start line and end line
-- function name and type
+Scans GitHub repos and prints detected functions in the terminal.
 
 ## Files
-- `runner.py` - main command
-- `gf_client.py` - GitHub API helpers
-- `gf_scanner.py` - zip download + code scan + line detection
-- `gf_extractors.py` - function extractors for supported languages
+- `runner.py` (entrypoint)
+- `gf_client.py` (GitHub API helpers)
+- `gf_scanner.py` (zip download + file scan)
+- `gf_extractors.py` (function detection)
 
 ## Quick start
 ```bash
@@ -18,26 +14,44 @@ cd "/Users/Apple/Desktop/my future"
 python3 runner.py
 ```
 
+## What it prints
+Each match prints:
+`[owner/repo] path start:<n> end:<n> <type> <name>`
+
+If `--show-body` is enabled, the function body is printed after this line.
+
+It also prints:
+- `[repo_idx/total] done` for each repo
+- `[batch x/y] repos a-b` for each chunk
+
 ## Default behavior
-- Searches top repos by stars
-- Default `top`: `100`
-- Default batch targets: `10,20,25,30`
-- Prints function output as soon as each repository is processed
-- No report file is written
-- Body output is **on** by default (use `--no-body` to disable)
+- Repo search: top by stars
+- `--top`: `100` (max 100)
+- Chunking: `--chunk-size 25` (`1-25`, `26-50`, `...`, `...-100`)
+- Parallel scans: `--workers 12`
+- No output file is written
+- Body output is off by default (`--show-body` to enable)
+
+To see function bodies on `python3 runner.py`, use:
+```bash
+python3 runner.py --show-body
+```
 
 ## Options
-- `--query` Set GitHub search query (default: `stars:>1`)
-- `--top N` Number of repos to process (max 100)
-- `--batch-targets "10,20,25,30"` Cumulative batch checkpoints
-- `--workers N` Parallel workers for repo scan (default: `4`)
-- `--max-file-kb N` Skip files larger than N KB (default: `512`)
-- `--show-body` Print function bodies in terminal output (default on)
-- `--no-body` Disable function body output
-- `--workdir` Temp/output directory (default: `~/Desktop/my future`)
+- `--query` Query string for GitHub search (default: `stars:>1`)
+- `--top N` Repos to process (default: `100`)
+- `--batch-size N` Chunk size for default batching (default: `25`)
+- `--batch-targets "10,20,25,30"` Custom batch end points (overrides `--batch-size`)
+- `--workers N` Parallel workers (default: `12`)
+- `--max-file-kb N` Skip files larger than N KB (default: `128`)
+- `--show-body` Print function bodies
+- `--no-body` Disable function bodies (default)
+- `--workdir` Temp directory
 
-## Example
+## Examples
 ```bash
+python3 runner.py
+python3 runner.py --show-body
 python3 runner.py --top 100 --workers 8
-python3 runner.py --top 100 --show-body
+python3 runner.py --batch-size 20
 ```
