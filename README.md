@@ -41,19 +41,23 @@ python3 runner.py --show-body
 ## Options
 - `--query` Query string for GitHub search (default: `stars:>1`)
 - `--top N` Repos to process (default: `100`)
-- `--batch-size N` Chunk size for default batching (default: `25`)
-- `--batch-targets "10,20,25,30"` Custom batch end points (overrides `--batch-size`)
+- `--chunk-size N` Chunk size for default batching (default: `25`)
+- `--batch-targets "10,20,25,30"` Custom batch end points (overrides `--chunk-size`)
 - `--workers N` Parallel workers (default: `12`)
 - `--max-file-kb N` Skip files larger than N KB (default: `128`)
 - `--show-body` Print function bodies
 - `--no-body` Disable function bodies (default)
 - `--workdir` Base directory for temporary files (default: `~/Desktop/my future`; ZIPs stored in `<workdir>/repo.zip/`)
 - `--keep-zips` Keep downloaded ZIP files in `<workdir>/repo.zip/`
+- `--parallel-terminals` Spawn each batch in separate Terminal instances
+- `--terminal-app` Terminal app name (default: `Terminal`) used with `--parallel-terminals`
 
 ## Examples
 ```bash
 python3 runner.py
 python3 runner.py --show-body
 python3 runner.py --top 100 --workers 8
-python3 runner.py --batch-size 20
+python3 runner.py --chunk-size 20
+python3 runner.py --parallel-terminals
+python3 runner.py --parallel-terminals --chunk-size 15
 ```
