@@ -4,6 +4,5 @@ Scans the top 100 GitHub repositories and prints detected functions in the termi
 
 ```bash
 cd "/Users/Apple/Desktop/my future"
-python3 runner.py --parallel-terminals  // ths only shows the file path
-python3 runner.py --parallel-terminals --show-body // this prints out the func and all that
+python3 runner.py --parallel-terminals --show-body 
 ```
