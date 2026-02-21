@@ -113,6 +113,10 @@ def _build_common_argv(args: argparse.Namespace) -> list[str]:
     return argv
 
 
+def _escape_applescript_text(text: str) -> str:
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def _launch_terminal_batch(
     batch_no: int,
     total_batches: int,
@@ -125,24 +129,27 @@ def _launch_terminal_batch(
     argv = _build_common_argv(args)
     argv.extend(
         [
-        "--subset-start",
-        str(start_idx),
-        "--subset-end",
-        str(end_idx),
-        "--batch-label",
-        f"{batch_no}/{total_batches}",
-    ]
+            "--subset-start",
+            str(start_idx),
+            "--subset-end",
+            str(end_idx),
+            "--batch-label",
+            f"{batch_no}/{total_batches}",
+        ]
     )
 
     if sys.platform.startswith("darwin"):
         script_body = " ".join(shlex.quote(part) for part in argv)
         terminal = args.terminal_app
         cwd = shlex.quote(str(Path(__file__).resolve().parent))
-        command = f"cd {cwd} && {script_body}; exit"
+        command = f"cd {cwd} && {script_body}"
+        escaped_command = _escape_applescript_text(command)
         osascript = [
             "osascript",
             "-e",
-            f'tell application "{terminal}" to do script "{command}"',
+            f'tell application "{terminal}" to activate',
+            "-e",
+            f'tell application "{terminal}" to do script "{escaped_command}"',
         ]
         return subprocess.Popen(osascript)
 
@@ -416,9 +423,14 @@ def main() -> None:
             processes.append(proc)
 
         for process in processes:
-            return_code = process.wait()
+            stdout, stderr = process.communicate()
+            return_code = process.returncode
             if return_code != 0:
-                print(f"One batch exited with status {return_code}.")
+                print(f"One batch command failed with status {return_code}.")
+                if stdout:
+                    print(stdout.strip())
+                if stderr:
+                    print(stderr.strip())
         print(f"Spawned and waited for {len(processes)} batch process(es).")
         return
 
