@@ -31,6 +31,7 @@ It also prints:
 - Parallel scans: `--workers 12`
 - No output file is written
 - Body output is off by default (`--show-body` to enable)
+- Repo ZIP downloads are written to `<workdir>/repo.zip/` and removed after each repo unless `--keep-zips` is passed.
 
 To see function bodies on `python3 runner.py`, use:
 ```bash
@@ -46,7 +47,8 @@ python3 runner.py --show-body
 - `--max-file-kb N` Skip files larger than N KB (default: `128`)
 - `--show-body` Print function bodies
 - `--no-body` Disable function bodies (default)
-- `--workdir` Temp directory
+- `--workdir` Base directory for temporary files (default: `~/Desktop/my future`; ZIPs stored in `<workdir>/repo.zip/`)
+- `--keep-zips` Keep downloaded ZIP files in `<workdir>/repo.zip/`
 
 ## Examples
 ```bash

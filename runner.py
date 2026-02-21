@@ -79,15 +79,16 @@ def _print_functions(repo: str, functions: list[dict], show_body: bool) -> None:
 def _scan_repository(
     idx: int,
     repo: dict,
-    workdir: Path,
+    zip_dir: Path,
     token: str | None,
     max_file_kb: int,
     show_body: bool,
+    keep_zip: bool,
 ) -> tuple[int, RepoResult, int]:
     full_name = repo["full_name"]
     branch = repo.get("default_branch", "main")
     zip_url = gf_client.repo_zip_url(full_name, default_branch=branch)
-    zip_path = workdir / f"{full_name.replace('/', '__')}.zip"
+    zip_path = zip_dir / f"{full_name.replace('/', '__')}.zip"
 
     try:
         gf_client.download_file(zip_url, token=token, dest=zip_path)
@@ -100,7 +101,7 @@ def _scan_repository(
     except (HTTPError, URLError, zipfile.BadZipFile):
         funcs = []
     finally:
-        if zip_path.exists():
+        if zip_path.exists() and not keep_zip:
             zip_path.unlink()
 
     result = RepoResult(
@@ -119,7 +120,7 @@ def _process_repositories(
     start: int,
     end: int,
     total: int,
-    workdir: Path,
+    zip_dir: Path,
     args,
 ) -> tuple[int, int]:
     selected = repos[start:end]
@@ -132,10 +133,11 @@ def _process_repositories(
             idx, result, count = _scan_repository(
                 offset,
                 repo,
-                workdir,
+                zip_dir,
                 args.token,
                 args.max_file_kb,
                 args.show_body,
+                args.keep_zip,
             )
             print(f"[{idx}/{total}] done")
             _print_functions(result.full_name, result.functions, args.show_body)
@@ -149,10 +151,11 @@ def _process_repositories(
                 _scan_repository,
                 offset,
                 repo,
-                workdir,
+                zip_dir,
                 args.token,
                 args.max_file_kb,
                 args.show_body,
+                args.keep_zip,
             ): offset
             for offset, repo in enumerate(selected, start=start + 1)
         }
@@ -219,13 +222,20 @@ def main() -> None:
         default=12,
         help="Parallel workers for repo download/scan",
     )
+    parser.add_argument(
+        "--keep-zips",
+        action="store_true",
+        default=False,
+        help="Keep downloaded repo ZIP files in the repo.zip folder",
+    )
     args = parser.parse_args()
 
     args.show_body = False if args.no_body else args.show_body
 
     requested_top = max(1, min(args.top, 100))
     workdir = Path(args.workdir)
-    workdir.mkdir(parents=True, exist_ok=True)
+    zip_dir = workdir / "repo.zip"
+    zip_dir.mkdir(parents=True, exist_ok=True)
 
     repos, total_count = gf_client.fetch_top_repositories(args.query, requested_top, token=args.token)
     if not repos:
@@ -256,7 +266,7 @@ def main() -> None:
             prev,
             target,
             len(repos),
-            workdir,
+            zip_dir,
             args,
         )
         stats["repositories"] += batch_processed
